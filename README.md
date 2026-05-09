@@ -4,7 +4,7 @@ A web-based tactical bullet-hell roguelite. Top-down, single-file, runs in any m
 
 > A reimagining of the 1996 Activision shooter, with squad-coordinated AI inspired by F.E.A.R., procedurally generated maps, and a Frutiger Aero / Y2K cyber visual aesthetic.
 
-**▶ [Play in browser](https://MrCarter421.github.io/CyberDawgs/)** *(replace with your username after deploy)*
+**▶ [Play in browser](https://MrCarter421.github.io/cyberdawgs/)
 
 ---
 

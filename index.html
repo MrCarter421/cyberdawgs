@@ -367,6 +367,62 @@
   }
   .shop-overlay.show { display: flex; animation: fadeIn 0.4s; }
 
+  /* ----- Prelude Stage Overlays (Sniper / Rappel) ----- */
+  .stage-overlay {
+    position: fixed; inset: 0;
+    z-index: 30;
+    display: none;
+    align-items: center; justify-content: center;
+    pointer-events: auto;
+    font-family: 'Orbitron', sans-serif;
+    color: var(--aero-glow);
+    background: radial-gradient(ellipse at center, rgba(10,58,92,0.55) 0%, rgba(2,16,30,0.85) 70%);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    cursor: crosshair;
+  }
+  .stage-overlay.show { display: flex; animation: fadeIn 0.4s; }
+  .stage-card {
+    padding: 28px 36px;
+    border-radius: 12px;
+    background: rgba(2,16,30,0.7);
+    border: 1px solid rgba(196,241,255,0.25);
+    box-shadow: 0 0 32px rgba(95,200,232,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+    text-align: center;
+    max-width: 80vw;
+  }
+  .stage-label {
+    font-size: clamp(10px, 1.4vmin, 13px);
+    letter-spacing: 0.5em;
+    color: var(--aero-magenta);
+    text-shadow: 0 0 12px rgba(255,62,160,0.6);
+    margin-bottom: 10px;
+  }
+  .stage-title {
+    font-weight: 900;
+    font-size: clamp(22px, 4vmin, 36px);
+    letter-spacing: 0.3em;
+    text-shadow: 0 0 18px rgba(196,241,255,0.7);
+    margin-bottom: 14px;
+  }
+  .stage-flavor {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(10px, 1.4vmin, 12px);
+    color: rgba(196,241,255,0.7);
+    letter-spacing: 0.18em;
+    line-height: 1.6;
+    margin-bottom: 18px;
+    max-width: 36ch;
+  }
+  .stage-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(9px, 1.2vmin, 11px);
+    color: var(--aero-mint);
+    letter-spacing: 0.32em;
+    text-shadow: 0 0 8px rgba(136,247,199,0.5);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+
   .shop-header {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 12px;
@@ -587,6 +643,25 @@
   </div>
 </div>
 
+<!-- Prelude stage overlays (scaffold; full content in pass 2) -->
+<div class="stage-overlay" id="sniperOverlay">
+  <div class="stage-card">
+    <div class="stage-label">// PRELUDE 01 // OVERWATCH</div>
+    <div class="stage-title">RECON SNIPER</div>
+    <div class="stage-flavor">SCOPE THE EXTERIOR. PICK OFF SENTRIES BEFORE THE INSERTION TEAM TOUCHES STEEL.</div>
+    <div class="stage-hint">CLICK OR PRESS SPACE TO ADVANCE</div>
+  </div>
+</div>
+
+<div class="stage-overlay" id="rappelOverlay">
+  <div class="stage-card">
+    <div class="stage-label">// PRELUDE 02 // DESCENT</div>
+    <div class="stage-title">RAPPEL BREACH</div>
+    <div class="stage-flavor">DROP THE FACADE. SHOOT THROUGH WINDOWS. REACH THE BREACH POINT.</div>
+    <div class="stage-hint">CLICK OR PRESS SPACE TO ADVANCE</div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.4.0/pixi.min.js"></script>
 <script>
 'use strict';
@@ -725,6 +800,10 @@ const loadout = {
 };
 let missionNum = 1;
 let gameState = 'playing'; // 'playing' | 'mission_end' | 'shop'
+// Stage layer: each mission runs sniper -> rappel -> topdown before score/shop.
+// Pass 1 has placeholder sniper/rappel; pass 2 fills in mechanics.
+let currentStage = 'topdown'; // 'sniper' | 'rappel' | 'topdown'
+let stageQueue = [];
 
 // ========================================================
 // MISSION-LOCAL STATS
@@ -735,13 +814,27 @@ let stats = {
   bulletsHit: 0,
   kills: { drone: 0, turret: 0 },
   itemsCollected: { dataChip: 0, cache: 0, health: 0 },
+  sniper: { hits: 0, misses: 0, headshots: 0 },
+  rappel: { time: 0, damageTaken: 0, kills: 0 },
 };
 function resetStats() {
   stats = {
     bulletsFired: 0, bulletsHit: 0,
     kills: { drone: 0, turret: 0 },
     itemsCollected: { dataChip: 0, cache: 0, health: 0 },
+    sniper: { hits: 0, misses: 0, headshots: 0 },
+    rappel: { time: 0, damageTaken: 0, kills: 0 },
   };
+}
+
+// Stage-local state, reset by enter* functions.
+let sniperStage = { timeLeft: 0, targets: [], hits: 0, misses: 0, headshots: 0 };
+let rappelStage = { playerY: 0, ropeSpeed: 1, windows: [], enemies: [], damageTaken: 0, time: 0 };
+function resetSniperStage() {
+  sniperStage = { timeLeft: 30, targets: [], hits: 0, misses: 0, headshots: 0 };
+}
+function resetRappelStage() {
+  rappelStage = { playerY: 0, ropeSpeed: 1, windows: [], enemies: [], damageTaken: 0, time: 0 };
 }
 
 // ========================================================
@@ -1623,9 +1716,12 @@ const hintEl = document.getElementById('hint');
 
 window.addEventListener('keydown', e => {
   keys.add(e.key.toLowerCase());
-  if (e.key === ' ') e.preventDefault();
+  if (e.key === ' ') {
+    e.preventDefault();
+    if (currentStage === 'sniper' || currentStage === 'rappel') advanceStage();
+  }
   if (e.key.toLowerCase() === 'g') debug = !debug;
-  if (e.key.toLowerCase() === 'r' && gameState === 'playing') restartCurrentMission();
+  if (e.key.toLowerCase() === 'r' && gameState === 'playing' && currentStage === 'topdown') restartCurrentMission();
 });
 window.addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
 window.addEventListener('mousedown', e => { if (e.button === 0) mouseDown = true; });
@@ -1645,7 +1741,10 @@ function hideJoy() { joyEl.classList.remove('active'); joyVec.x = 0; joyVec.y = 
 function enableTouch() { if (touchMode) return; touchMode = true; document.body.classList.add('touch-mode'); }
 function isTargetFireBtn(target) { return target && target.closest && target.closest('.fire-btn'); }
 function isInOverlay(target) {
-  return target && target.closest && (target.closest('.score-overlay') || target.closest('.shop-overlay') || target.closest('.death-overlay'));
+  return target && target.closest && (
+    target.closest('.score-overlay') || target.closest('.shop-overlay') ||
+    target.closest('.death-overlay') || target.closest('.stage-overlay')
+  );
 }
 
 function onTouchStart(e) {
@@ -1707,6 +1806,11 @@ window.addEventListener('mouseup', () => {
 const deathOverlay = document.getElementById('deathOverlay');
 deathOverlay.addEventListener('click', () => restartCurrentMission());
 
+const sniperOverlay = document.getElementById('sniperOverlay');
+const rappelOverlay = document.getElementById('rappelOverlay');
+sniperOverlay.addEventListener('click', () => { if (currentStage === 'sniper') advanceStage(); });
+rappelOverlay.addEventListener('click', () => { if (currentStage === 'rappel') advanceStage(); });
+
 // ========================================================
 // CAMERA
 // ========================================================
@@ -1736,9 +1840,62 @@ function startMission(missionN) {
   resetStats();
   applyLoadout();
 
-  // New seed each mission
-  const seed = (missionN * 73856093 + Math.floor(Math.random() * 4294967295)) >>> 0;
-  generateLevel(seed, missionN);
+  scoreOverlay.classList.remove('show');
+  shopOverlay.classList.remove('show');
+  deathOverlay.classList.remove('show');
+  document.getElementById('missionTitle').textContent = 'M' + String(missionN).padStart(2, '0');
+
+  // Every mission runs sniper -> rappel -> topdown.
+  stageQueue = ['sniper', 'rappel', 'topdown'];
+  advanceStage();
+}
+
+// Pops the next stage off the queue and enters it. Called by startMission and
+// by sniper/rappel when they auto-complete. Topdown's exit-portal trigger does
+// NOT call this — it calls onMissionWin (which routes to the score screen).
+function advanceStage() {
+  const next = stageQueue.shift();
+  if (!next) { onMissionWin(); return; }
+  if (next === 'sniper')  enterSniperStage();
+  else if (next === 'rappel')  enterRappelStage();
+  else if (next === 'topdown') enterTopdownStage();
+}
+
+function enterSniperStage() {
+  currentStage = 'sniper';
+  gameState = 'playing';
+  resetSniperStage();
+  // Hide the top-down world; chrome is the DOM overlay.
+  worldRoot.visible = false;
+  player.alive = false; // prevents existing input/AI code from acting if dispatch ever leaks
+  rappelOverlay.classList.remove('show');
+  sniperOverlay.classList.add('show');
+  document.getElementById('objText').textContent = 'IDENTIFY HOSTILES';
+}
+
+function enterRappelStage() {
+  currentStage = 'rappel';
+  gameState = 'playing';
+  resetRappelStage();
+  worldRoot.visible = false;
+  player.alive = false;
+  // Rappel uses player.hp; pass 2 wires actual damage. Start full.
+  player.hp = player.maxHp;
+  sniperOverlay.classList.remove('show');
+  rappelOverlay.classList.add('show');
+  document.getElementById('objText').textContent = 'DESCEND TO BREACH POINT';
+}
+
+function enterTopdownStage() {
+  currentStage = 'topdown';
+  gameState = 'playing';
+  sniperOverlay.classList.remove('show');
+  rappelOverlay.classList.remove('show');
+  worldRoot.visible = true;
+
+  // New seed each mission entry into topdown
+  const seed = (missionNum * 73856093 + Math.floor(Math.random() * 4294967295)) >>> 0;
+  generateLevel(seed, missionNum);
   drawBackground();
   drawWalls();
 
@@ -1757,21 +1914,22 @@ function startMission(missionN) {
   calloutTexts.length = 0;
   camera.x = player.x; camera.y = player.y;
 
-  scoreOverlay.classList.remove('show');
-  shopOverlay.classList.remove('show');
-  deathOverlay.classList.remove('show');
-
   document.getElementById('objText').textContent = 'LOCATE EXTRACTION POINT';
-  document.getElementById('missionTitle').textContent = 'M' + String(missionN).padStart(2, '0');
 }
 
 function restartCurrentMission() {
-  // No credit penalty for now — just restart
-  startMission(missionNum);
+  // Re-enter the current stage only. Sniper completion is permanent so we
+  // shouldn't get here from sniper, but route there safely if we do.
+  deathOverlay.classList.remove('show');
+  if (currentStage === 'sniper') enterSniperStage();
+  else if (currentStage === 'rappel') enterRappelStage();
+  else enterTopdownStage();
 }
 
 function onMissionWin() {
   if (gameState !== 'playing') return;
+  // If we still have prelude stages queued, advance instead of ending.
+  if (stageQueue.length > 0) { advanceStage(); return; }
   gameState = 'mission_end';
   player.alive = false; // freeze input
   showScoreScreen();
@@ -2190,7 +2348,26 @@ function updateDrone(e, dt) {
 // ========================================================
 // MAIN UPDATE
 // ========================================================
+// ========================================================
+// PRELUDE STAGE UPDATE / RENDER (pass 1: placeholders)
+// Pass 2 fills in sniper targets, rappel descent, building geometry, scoring.
+// ========================================================
+function updateSniper(dt) {
+  // Placeholder: just tick the stage timer; advance is via overlay click/space.
+  sniperStage.timeLeft = Math.max(0, sniperStage.timeLeft - dt);
+}
+function renderSniper() { /* placeholder: DOM overlay handles visuals */ }
+
+function updateRappel(dt) {
+  rappelStage.time += dt;
+}
+function renderRappel() { /* placeholder: DOM overlay handles visuals */ }
+
 function update(dt) {
+  // Stage dispatch: sniper/rappel run their own loops; top-down falls through.
+  if (currentStage === 'sniper') { updateSniper(dt); return; }
+  if (currentStage === 'rappel') { updateRappel(dt); return; }
+
   // Player input only when playing
   if (gameState === 'playing' && player.alive) {
     let mx = 0, my = 0;
@@ -2427,6 +2604,8 @@ function flashHit() {
 // RENDER
 // ========================================================
 function render() {
+  if (currentStage === 'sniper') { renderSniper(); return; }
+  if (currentStage === 'rappel') { renderRappel(); return; }
   const visPoly = computeVisibility(player.x, player.y, player.viewRange);
   losMask.clear();
   losMask.beginFill(0xffffff, 1);

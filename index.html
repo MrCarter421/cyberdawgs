@@ -372,56 +372,175 @@
     position: fixed; inset: 0;
     z-index: 30;
     display: none;
-    align-items: center; justify-content: center;
     pointer-events: auto;
     font-family: 'Orbitron', sans-serif;
     color: var(--aero-glow);
-    background: radial-gradient(ellipse at center, rgba(10,58,92,0.55) 0%, rgba(2,16,30,0.85) 70%);
-    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
-    cursor: crosshair;
+    cursor: none;
+    overflow: hidden;
   }
-  .stage-overlay.show { display: flex; animation: fadeIn 0.4s; }
-  .stage-card {
-    padding: 28px 36px;
-    border-radius: 12px;
-    background: rgba(2,16,30,0.7);
-    border: 1px solid rgba(196,241,255,0.25);
-    box-shadow: 0 0 32px rgba(95,200,232,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
-    text-align: center;
-    max-width: 80vw;
+  .stage-overlay.show { display: block; animation: fadeIn 0.35s; }
+  .stage-overlay::after {
+    /* CRT scanlines specific to the stage chrome */
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(to bottom,
+      rgba(0,0,0,0.0) 0px, rgba(0,0,0,0.0) 2px,
+      rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 3px);
+    pointer-events: none;
+    image-rendering: pixelated;
+    z-index: 5;
   }
-  .stage-label {
-    font-size: clamp(10px, 1.4vmin, 13px);
-    letter-spacing: 0.5em;
-    color: var(--aero-magenta);
-    text-shadow: 0 0 12px rgba(255,62,160,0.6);
-    margin-bottom: 10px;
+
+  /* ----- SNIPER: scope vignette + crosshair ----- */
+  .scope-vignette {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at center,
+      rgba(0,0,0,0) 0%, rgba(0,0,0,0) 30%,
+      rgba(0,0,0,0.5) 45%, rgba(0,0,0,0.92) 60%, rgba(0,0,0,1) 75%);
+    z-index: 3;
   }
-  .stage-title {
-    font-weight: 900;
-    font-size: clamp(22px, 4vmin, 36px);
-    letter-spacing: 0.3em;
-    text-shadow: 0 0 18px rgba(196,241,255,0.7);
-    margin-bottom: 14px;
+  .scope-crosshair {
+    position: fixed;
+    width: 60px; height: 60px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 6;
+    left: 50%; top: 50%;
+    mix-blend-mode: screen;
   }
-  .stage-flavor {
+  .scope-crosshair .ch-h, .scope-crosshair .ch-v {
+    position: absolute; background: var(--aero-magenta);
+    box-shadow: 0 0 6px var(--aero-magenta);
+  }
+  .scope-crosshair .ch-h { left: 0; right: 0; top: 50%; height: 1px; margin-top: -0.5px; }
+  .scope-crosshair .ch-v { top: 0; bottom: 0; left: 50%; width: 1px; margin-left: -0.5px; }
+  .scope-crosshair .ch-ring {
+    position: absolute; inset: 22px;
+    border: 1px solid var(--aero-magenta);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(255,62,160,0.7);
+  }
+
+  /* ----- RAPPEL: crosshair (no vignette, full sight) ----- */
+  .rappel-crosshair {
+    position: fixed;
+    width: 38px; height: 38px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 6;
+    left: 50%; top: 50%;
+    mix-blend-mode: screen;
+  }
+  .rappel-crosshair .ch-h, .rappel-crosshair .ch-v {
+    position: absolute; background: var(--aero-glow);
+    box-shadow: 0 0 4px var(--aero-glow);
+  }
+  .rappel-crosshair .ch-h { left: 0; right: 0; top: 50%; height: 1px; margin-top: -0.5px; }
+  .rappel-crosshair .ch-v { top: 0; bottom: 0; left: 50%; width: 1px; margin-left: -0.5px; }
+
+  /* ----- STAGE HUD (pixel chrome panels, top + bottom) ----- */
+  .stage-hud {
+    position: absolute;
+    left: 14px; right: 14px;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+    pointer-events: none;
     font-family: 'JetBrains Mono', monospace;
-    font-size: clamp(10px, 1.4vmin, 12px);
-    color: rgba(196,241,255,0.7);
+    image-rendering: pixelated;
+  }
+  .stage-hud-top {
+    top: calc(10px + env(safe-area-inset-top));
+    flex-wrap: wrap;
+  }
+  .stage-hud-bottom {
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    justify-content: center;
+  }
+  .hud-cell {
+    padding: 6px 10px 5px;
+    background: rgba(2,16,30,0.78);
+    border: 2px solid rgba(95,200,232,0.55);
+    border-radius: 0;
+    display: flex; flex-direction: column;
+    gap: 1px;
+    min-width: 64px;
+    box-shadow: 0 0 12px rgba(95,200,232,0.18), inset 0 0 0 1px rgba(255,255,255,0.06);
+  }
+  .hud-cell .lbl {
+    font-size: clamp(8px, 1.1vmin, 10px);
     letter-spacing: 0.18em;
-    line-height: 1.6;
-    margin-bottom: 18px;
-    max-width: 36ch;
+    color: rgba(196,241,255,0.55);
+    font-weight: 700;
   }
-  .stage-hint {
-    font-family: 'JetBrains Mono', monospace;
+  .hud-cell .val {
+    font-size: clamp(13px, 1.9vmin, 17px);
+    letter-spacing: 0.06em;
+    color: var(--aero-glow);
+    font-weight: 700;
+    text-shadow: 0 0 6px rgba(196,241,255,0.7);
+    font-variant-numeric: tabular-nums;
+  }
+  .hud-cell .val-magenta { color: var(--aero-magenta); text-shadow: 0 0 6px rgba(255,62,160,0.7); }
+  .hud-cell .val-mint    { color: var(--aero-mint);    text-shadow: 0 0 6px rgba(136,247,199,0.7); }
+  .hud-cell .val-red     { color: var(--aero-red);     text-shadow: 0 0 6px rgba(255,80,80,0.7); }
+  .hud-cell.urgent { border-color: var(--aero-red); animation: hudPulse 0.5s ease-in-out infinite; }
+  @keyframes hudPulse { 0%,100% { box-shadow: 0 0 12px rgba(255,80,80,0.35); } 50% { box-shadow: 0 0 20px rgba(255,80,80,0.7); } }
+
+  .objective-flavor {
+    padding: 6px 14px;
+    background: rgba(2,16,30,0.7);
+    border: 1px solid rgba(196,241,255,0.3);
     font-size: clamp(9px, 1.2vmin, 11px);
-    color: var(--aero-mint);
-    letter-spacing: 0.32em;
-    text-shadow: 0 0 8px rgba(136,247,199,0.5);
-    animation: pulse 1.6s ease-in-out infinite;
+    letter-spacing: 0.22em;
+    color: rgba(196,241,255,0.75);
+    text-shadow: 0 0 6px rgba(196,241,255,0.5);
   }
-  @keyframes pulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+  /* ----- RAPPEL: altimeter (vertical track on right side) ----- */
+  .rappel-altimeter {
+    position: absolute;
+    top: 84px; bottom: 70px;
+    right: 18px;
+    width: 28px;
+    z-index: 8;
+    display: flex; flex-direction: column; align-items: center;
+    pointer-events: none;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .alt-track {
+    flex: 1; width: 8px;
+    background: rgba(2,16,30,0.85);
+    border: 2px solid rgba(95,200,232,0.55);
+    position: relative;
+    box-shadow: 0 0 8px rgba(95,200,232,0.2);
+  }
+  .alt-fill {
+    position: absolute; left: 0; right: 0; top: 0;
+    background: linear-gradient(180deg, var(--aero-magenta), var(--aero-aqua));
+    box-shadow: 0 0 8px rgba(255,62,160,0.6);
+    height: 0%;
+    transition: height 0.12s linear;
+  }
+  .alt-label {
+    font-size: 9px; letter-spacing: 0.3em;
+    color: rgba(196,241,255,0.55);
+    margin-top: 6px;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+
+  /* Hide the topdown HUD elements that don't apply during prelude stages */
+  body.stage-prelude .health-panel,
+  body.stage-prelude .stat-strip,
+  body.stage-prelude .credits-pill,
+  body.stage-prelude .mini-map,
+  body.stage-prelude .hud-legend,
+  body.stage-prelude .joy,
+  body.stage-prelude .fire-btn,
+  body.stage-prelude .hint,
+  body.stage-prelude .hud-title,
+  body.stage-prelude .objective { display: none !important; }
 
   .shop-header {
     display: flex; justify-content: space-between; align-items: center;
@@ -643,22 +762,42 @@
   </div>
 </div>
 
-<!-- Prelude stage overlays (scaffold; full content in pass 2) -->
-<div class="stage-overlay" id="sniperOverlay">
-  <div class="stage-card">
-    <div class="stage-label">// PRELUDE 01 // OVERWATCH</div>
-    <div class="stage-title">RECON SNIPER</div>
-    <div class="stage-flavor">SCOPE THE EXTERIOR. PICK OFF SENTRIES BEFORE THE INSERTION TEAM TOUCHES STEEL.</div>
-    <div class="stage-hint">CLICK OR PRESS SPACE TO ADVANCE</div>
+<!-- Prelude: SNIPER stage chrome -->
+<div class="stage-overlay sniper-chrome" id="sniperOverlay">
+  <div class="scope-vignette"></div>
+  <div class="scope-crosshair" id="scopeCrosshair">
+    <span class="ch-h"></span><span class="ch-v"></span>
+    <span class="ch-ring"></span>
+  </div>
+  <div class="stage-hud stage-hud-top">
+    <div class="hud-cell"><span class="lbl">PRELUDE 01</span><span class="val">OVERWATCH</span></div>
+    <div class="hud-cell"><span class="lbl">TIME</span><span class="val" id="sniperTime">30.0</span></div>
+    <div class="hud-cell"><span class="lbl">HITS</span><span class="val" id="sniperHits">0</span></div>
+    <div class="hud-cell"><span class="lbl">ACC</span><span class="val" id="sniperAcc">--%</span></div>
+    <div class="hud-cell"><span class="lbl">HEAD</span><span class="val val-magenta" id="sniperHeads">0</span></div>
+  </div>
+  <div class="stage-hud stage-hud-bottom">
+    <span class="objective-flavor" id="sniperObjective">// IDENTIFY HOSTILES // CLICK TO ENGAGE</span>
   </div>
 </div>
 
-<div class="stage-overlay" id="rappelOverlay">
-  <div class="stage-card">
-    <div class="stage-label">// PRELUDE 02 // DESCENT</div>
-    <div class="stage-title">RAPPEL BREACH</div>
-    <div class="stage-flavor">DROP THE FACADE. SHOOT THROUGH WINDOWS. REACH THE BREACH POINT.</div>
-    <div class="stage-hint">CLICK OR PRESS SPACE TO ADVANCE</div>
+<!-- Prelude: RAPPEL stage chrome -->
+<div class="stage-overlay rappel-chrome" id="rappelOverlay">
+  <div class="stage-hud stage-hud-top">
+    <div class="hud-cell"><span class="lbl">PRELUDE 02</span><span class="val">DESCENT</span></div>
+    <div class="hud-cell"><span class="lbl">FLOOR</span><span class="val" id="rappelFloor">--</span></div>
+    <div class="hud-cell"><span class="lbl">HP</span><span class="val val-mint" id="rappelHp">100</span></div>
+    <div class="hud-cell"><span class="lbl">RATE</span><span class="val" id="rappelRate">NORM</span></div>
+  </div>
+  <div class="rappel-altimeter" id="rappelAltimeter">
+    <div class="alt-track"><div class="alt-fill" id="rappelAltFill"></div></div>
+    <div class="alt-label">DESCENT</div>
+  </div>
+  <div class="rappel-crosshair" id="rappelCrosshair">
+    <span class="ch-h"></span><span class="ch-v"></span>
+  </div>
+  <div class="stage-hud stage-hud-bottom">
+    <span class="objective-flavor">// W/S OR PINCH-FLICK TO ADJUST DESCENT // CLICK/TAP TO FIRE</span>
   </div>
 </div>
 
@@ -754,6 +893,14 @@ const SCORE = {
   extraction: 250,
   missionMultiplier: 100, // bonus = missionMultiplier * missionNum
   accuracyMaxBonus: 200,
+  // Prelude stages
+  sniperHit: 25,
+  sniperHeadshot: 25,           // additional bonus per headshot (on top of sniperHit)
+  sniperAccuracyMaxBonus: 180,  // up to +180 for 100% sniper accuracy
+  rappelKill: 30,
+  rappelCleanBonus: 220,        // awarded if rappel finished with 0 damage taken
+  rappelTimePerSec: 6,          // bonus per second saved under par (par = 14s)
+  rappelDamagePenaltyPerHp: 1,  // -1 cr per HP lost during rappel
 };
 
 // ========================================================
@@ -787,6 +934,18 @@ const dimFilter = new PIXI.ColorMatrixFilter();
 dimFilter.desaturate(); dimFilter.brightness(0.4, true);
 dimLayer.filters = [dimFilter];
 dimLayer.alpha = 0.55;
+
+// Stage root for sniper/rappel scenes. Sibling of worldRoot so it doesn't
+// inherit the camera transform or LOS mask. Visibility toggled per stage.
+const stageRoot = new PIXI.Container();
+app.stage.addChild(stageRoot);
+stageRoot.visible = false;
+const stageBuildingGfx = new PIXI.Graphics();
+const stageTargetGfx   = new PIXI.Graphics();
+const stagePlayerGfx   = new PIXI.Graphics();
+const stageBulletGfx   = new PIXI.Graphics();
+const stageParticleGfx = new PIXI.Graphics();
+stageRoot.addChild(stageBuildingGfx, stageTargetGfx, stagePlayerGfx, stageBulletGfx, stageParticleGfx);
 
 // ========================================================
 // PERSISTENT GAME STATE (across missions)
@@ -828,14 +987,18 @@ function resetStats() {
 }
 
 // Stage-local state, reset by enter* functions.
-let sniperStage = { timeLeft: 0, targets: [], hits: 0, misses: 0, headshots: 0 };
-let rappelStage = { playerY: 0, ropeSpeed: 1, windows: [], enemies: [], damageTaken: 0, time: 0 };
-function resetSniperStage() {
-  sniperStage = { timeLeft: 30, targets: [], hits: 0, misses: 0, headshots: 0 };
-}
-function resetRappelStage() {
-  rappelStage = { playerY: 0, ropeSpeed: 1, windows: [], enemies: [], damageTaken: 0, time: 0 };
-}
+let sniperStage = { timeLeft: 0, hits: 0, misses: 0, headshots: 0, spawnTimer: 0, windowGrid: [] };
+let rappelStage = { y: 0, totalY: 0, ropeSpeed: 1, sway: 0, enemySchedule: [], time: 0, ropeIdx: 0 };
+let sniperTargets = [];   // { wid, wx, wy, ww, wh, state, t, holdTime }
+let rappelEnemies = [];   // { wx, wy, ww, wh, hp, state, t, telegraph, fired }
+let stageBullets = [];    // { x, y, vx, vy, life, color, dmg, source: 'player'|'enemy' }
+let stageParticles = [];  // { x, y, vx, vy, life, max, r, color }
+let stageFireQueue = [];  // pending fire requests: { x, y }
+
+// Mouse position for crosshair + click-to-fire targeting. Initialized to
+// screen center so the crosshair starts somewhere sensible on touch devices
+// that never fire mousemove.
+let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
 
 // ========================================================
 // RNG
@@ -1718,7 +1881,8 @@ window.addEventListener('keydown', e => {
   keys.add(e.key.toLowerCase());
   if (e.key === ' ') {
     e.preventDefault();
-    if (currentStage === 'sniper' || currentStage === 'rappel') advanceStage();
+    // During sniper/rappel, space fires at the current crosshair location.
+    if (currentStage === 'sniper' || currentStage === 'rappel') queueStageFire(mouseX, mouseY);
   }
   if (e.key.toLowerCase() === 'g') debug = !debug;
   if (e.key.toLowerCase() === 'r' && gameState === 'playing' && currentStage === 'topdown') restartCurrentMission();
@@ -1808,8 +1972,40 @@ deathOverlay.addEventListener('click', () => restartCurrentMission());
 
 const sniperOverlay = document.getElementById('sniperOverlay');
 const rappelOverlay = document.getElementById('rappelOverlay');
-sniperOverlay.addEventListener('click', () => { if (currentStage === 'sniper') advanceStage(); });
-rappelOverlay.addEventListener('click', () => { if (currentStage === 'rappel') advanceStage(); });
+
+// Mouse position for crosshair + aim. Updated continuously.
+window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+
+// Stage fire: mouse click on overlay queues a fire at the click position.
+function queueStageFire(x, y) {
+  if (currentStage === 'sniper' || currentStage === 'rappel') {
+    stageFireQueue.push({ x, y });
+  }
+}
+sniperOverlay.addEventListener('mousedown', e => { if (e.button === 0) { queueStageFire(e.clientX, e.clientY); e.preventDefault(); } });
+rappelOverlay.addEventListener('mousedown', e => { if (e.button === 0) { queueStageFire(e.clientX, e.clientY); e.preventDefault(); } });
+
+// Touch fire (tap-to-fire-at-tap-point). isInOverlay() returns true for stage
+// overlays so the main joystick handler skips them; we handle taps here.
+sniperOverlay.addEventListener('touchstart', e => {
+  const t = e.changedTouches[0];
+  mouseX = t.clientX; mouseY = t.clientY;
+  queueStageFire(t.clientX, t.clientY);
+  e.preventDefault();
+}, { passive: false });
+rappelOverlay.addEventListener('touchstart', e => {
+  const t = e.changedTouches[0];
+  mouseX = t.clientX; mouseY = t.clientY;
+  queueStageFire(t.clientX, t.clientY);
+  e.preventDefault();
+}, { passive: false });
+// Drag-to-aim on touch (no fire on move; just track for crosshair)
+sniperOverlay.addEventListener('touchmove', e => {
+  const t = e.changedTouches[0]; mouseX = t.clientX; mouseY = t.clientY; e.preventDefault();
+}, { passive: false });
+rappelOverlay.addEventListener('touchmove', e => {
+  const t = e.changedTouches[0]; mouseX = t.clientX; mouseY = t.clientY; e.preventDefault();
+}, { passive: false });
 
 // ========================================================
 // CAMERA
@@ -1865,11 +2061,12 @@ function enterSniperStage() {
   currentStage = 'sniper';
   gameState = 'playing';
   resetSniperStage();
-  // Hide the top-down world; chrome is the DOM overlay.
   worldRoot.visible = false;
-  player.alive = false; // prevents existing input/AI code from acting if dispatch ever leaks
+  stageRoot.visible = true;
+  player.alive = false;
   rappelOverlay.classList.remove('show');
   sniperOverlay.classList.add('show');
+  document.body.classList.add('stage-prelude');
   document.getElementById('objText').textContent = 'IDENTIFY HOSTILES';
 }
 
@@ -1878,11 +2075,13 @@ function enterRappelStage() {
   gameState = 'playing';
   resetRappelStage();
   worldRoot.visible = false;
+  stageRoot.visible = true;
   player.alive = false;
-  // Rappel uses player.hp; pass 2 wires actual damage. Start full.
+  // Rappel shares player.hp with topdown — full HP at start, damage persists into topdown.
   player.hp = player.maxHp;
   sniperOverlay.classList.remove('show');
   rappelOverlay.classList.add('show');
+  document.body.classList.add('stage-prelude');
   document.getElementById('objText').textContent = 'DESCEND TO BREACH POINT';
 }
 
@@ -1891,7 +2090,9 @@ function enterTopdownStage() {
   gameState = 'playing';
   sniperOverlay.classList.remove('show');
   rappelOverlay.classList.remove('show');
+  document.body.classList.remove('stage-prelude');
   worldRoot.visible = true;
+  stageRoot.visible = false;
 
   // New seed each mission entry into topdown
   const seed = (missionNum * 73856093 + Math.floor(Math.random() * 4294967295)) >>> 0;
@@ -1948,6 +2149,7 @@ const scoreOverlay = document.getElementById('scoreOverlay');
 const shopOverlay = document.getElementById('shopOverlay');
 
 function computeScoreBreakdown() {
+  // Top-down rows (existing)
   const accuracy = stats.bulletsFired > 0 ? stats.bulletsHit / stats.bulletsFired : 0;
   const accuracyBonus = Math.round(accuracy * SCORE.accuracyMaxBonus);
   const droneCr = stats.kills.drone * SCORE.drone;
@@ -1955,12 +2157,42 @@ function computeScoreBreakdown() {
   const dataChipCr = stats.itemsCollected.dataChip * SCORE.dataChip;
   const cacheCr = stats.itemsCollected.cache * SCORE.cache;
   const missionBonus = SCORE.missionMultiplier * missionNum;
-  const totalKillCr = droneCr + turretCr;
-  const total = totalKillCr + accuracyBonus + dataChipCr + cacheCr + SCORE.extraction + missionBonus;
+
+  // Sniper rows
+  const sniperHitCr = stats.sniper.hits * SCORE.sniperHit;
+  const sniperHeadCr = stats.sniper.headshots * SCORE.sniperHeadshot;
+  const sniperTotal = stats.sniper.hits + stats.sniper.misses;
+  const sniperAcc = sniperTotal > 0 ? stats.sniper.hits / sniperTotal : 0;
+  const sniperAccBonus = Math.round(sniperAcc * SCORE.sniperAccuracyMaxBonus);
+
+  // Rappel rows
+  const rappelKillCr = stats.rappel.kills * SCORE.rappelKill;
+  const rappelPar = 14; // seconds par
+  const timeUnderPar = Math.max(0, rappelPar - stats.rappel.time);
+  const rappelTimeBonus = Math.round(timeUnderPar * SCORE.rappelTimePerSec);
+  const rappelCleanCr = stats.rappel.damageTaken === 0 ? SCORE.rappelCleanBonus : 0;
+  const rappelDmgPenalty = -Math.round(stats.rappel.damageTaken * SCORE.rappelDamagePenaltyPerHp);
+
+  const total =
+    sniperHitCr + sniperHeadCr + sniperAccBonus +
+    rappelKillCr + rappelTimeBonus + rappelCleanCr + rappelDmgPenalty +
+    droneCr + turretCr + accuracyBonus + dataChipCr + cacheCr +
+    SCORE.extraction + missionBonus;
+
   return {
     rows: [
-      { label: 'DRONES NEUTRALIZED', sub: `${stats.kills.drone} × ${SCORE.drone}`, value: droneCr, bonus: false },
-      { label: 'TURRETS DESTROYED',  sub: `${stats.kills.turret} × ${SCORE.turret}`, value: turretCr, bonus: false },
+      // Sniper
+      { label: 'SNIPER HITS',          sub: `${stats.sniper.hits} × ${SCORE.sniperHit}`, value: sniperHitCr, bonus: false },
+      { label: 'HEADSHOTS',            sub: `${stats.sniper.headshots} × ${SCORE.sniperHeadshot}`, value: sniperHeadCr, bonus: true },
+      { label: 'SNIPER ACCURACY',      sub: `${(sniperAcc * 100).toFixed(0)}%`, value: sniperAccBonus, bonus: true },
+      // Rappel
+      { label: 'RAPPEL KILLS',         sub: `${stats.rappel.kills} × ${SCORE.rappelKill}`, value: rappelKillCr, bonus: false },
+      { label: 'DESCENT TIME',         sub: `${stats.rappel.time.toFixed(1)}s`, value: rappelTimeBonus, bonus: true },
+      ...(rappelCleanCr > 0 ? [{ label: 'NO-HIT DESCENT', sub: 'CLEAN', value: rappelCleanCr, bonus: true }] : []),
+      ...(rappelDmgPenalty < 0 ? [{ label: 'RAPPEL DAMAGE', sub: `-${stats.rappel.damageTaken} HP`, value: rappelDmgPenalty, bonus: false }] : []),
+      // Top-down
+      { label: 'DRONES NEUTRALIZED',   sub: `${stats.kills.drone} × ${SCORE.drone}`, value: droneCr, bonus: false },
+      { label: 'TURRETS DESTROYED',    sub: `${stats.kills.turret} × ${SCORE.turret}`, value: turretCr, bonus: false },
       { label: 'DATA CHIPS',           sub: `${stats.itemsCollected.dataChip} × ${SCORE.dataChip}`, value: dataChipCr, bonus: false },
       { label: 'CACHE RECOVERY',       sub: `${stats.itemsCollected.cache} × ${SCORE.cache}`, value: cacheCr, bonus: false },
       { label: 'ACCURACY',             sub: `${(accuracy * 100).toFixed(1)}%`, value: accuracyBonus, bonus: true },
@@ -2349,19 +2581,656 @@ function updateDrone(e, dt) {
 // MAIN UPDATE
 // ========================================================
 // ========================================================
-// PRELUDE STAGE UPDATE / RENDER (pass 1: placeholders)
-// Pass 2 fills in sniper targets, rappel descent, building geometry, scoring.
+// PRELUDE STAGES: SNIPER + RAPPEL
 // ========================================================
-function updateSniper(dt) {
-  // Placeholder: just tick the stage timer; advance is via overlay click/space.
-  sniperStage.timeLeft = Math.max(0, sniperStage.timeLeft - dt);
+
+// ----- Shared utilities -----
+
+function spawnStageParticle(x, y, color, r = 3, life = 0.4) {
+  const ang = Math.random() * Math.PI * 2;
+  const sp = 40 + Math.random() * 140;
+  stageParticles.push({
+    x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp,
+    life, max: life, r, color,
+  });
 }
-function renderSniper() { /* placeholder: DOM overlay handles visuals */ }
+function spawnStageHitBurst(x, y, color, count = 10) {
+  for (let i = 0; i < count; i++) spawnStageParticle(x, y, color, 2 + Math.random() * 3, 0.25 + Math.random() * 0.3);
+}
+
+// Draws a building facade with a window grid. Used by both sniper (static) and
+// rappel (scrolled vertically). yOffset shifts the entire building.
+function drawBuildingExterior(g, w, h, windowGrid, yOffset = 0) {
+  // Facade base
+  g.beginFill(0x0a2a44, 1);
+  g.drawRect(0, 0, w, h);
+  g.endFill();
+  // Parallax tower silhouettes in the distance
+  g.beginFill(0x051a2c, 0.8);
+  const skyH = Math.max(60, h * 0.18);
+  for (let i = 0; i < 6; i++) {
+    const sx = (w / 6) * i + 4;
+    const sw = w / 6 - 8;
+    const sh = skyH * (0.5 + ((i * 37) % 50) / 100);
+    g.drawRect(sx, skyH - sh, sw, sh);
+  }
+  g.endFill();
+  // Vertical structural seams
+  g.beginFill(0x041829, 0.7);
+  const seams = 7;
+  for (let i = 1; i < seams; i++) {
+    const x = (w / seams) * i - 3;
+    g.drawRect(x, 0, 6, h);
+  }
+  g.endFill();
+  // Window grid
+  for (const win of windowGrid) {
+    const wy = win.y + yOffset;
+    if (wy + win.h < -20 || wy > h + 20) continue; // cull off-screen
+    // Frame
+    g.beginFill(0x000814, 0.95);
+    g.drawRect(win.x - 3, wy - 3, win.w + 6, win.h + 6);
+    g.endFill();
+    g.beginFill(0x0a3a5c, 0.4);
+    g.drawRect(win.x, wy, win.w, win.h);
+    g.endFill();
+    // Inner ambient cyan glow
+    g.beginFill(0x5fc8e8, 0.06);
+    g.drawRect(win.x + 2, wy + 2, win.w - 4, win.h - 4);
+    g.endFill();
+    // Cross divider
+    g.lineStyle(1, 0x5fc8e8, 0.18);
+    g.moveTo(win.x + win.w / 2, wy);
+    g.lineTo(win.x + win.w / 2, wy + win.h);
+    g.moveTo(win.x, wy + win.h / 2);
+    g.lineTo(win.x + win.w, wy + win.h / 2);
+    g.lineStyle(0);
+  }
+}
+
+// ----- Sniper stage -----
+
+function resetSniperStage() {
+  // 5x3 window grid with margin
+  const cols = 5, rows = 3;
+  const marginX = Math.max(40, W * 0.07);
+  const marginY = Math.max(70, H * 0.14);
+  const usableW = W - marginX * 2;
+  const usableH = H - marginY * 2;
+  const cellW = usableW / cols;
+  const cellH = usableH / rows;
+  const grid = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      grid.push({
+        id: r * cols + c,
+        x: marginX + c * cellW + 10,
+        y: marginY + r * cellH + 10,
+        w: cellW - 20,
+        h: cellH - 20,
+      });
+    }
+  }
+  sniperStage = {
+    timeLeft: 30,
+    hits: 0, misses: 0, headshots: 0,
+    spawnTimer: 1.2,
+    windowGrid: grid,
+  };
+  sniperTargets = [];
+  stageBullets = [];
+  stageParticles = [];
+  stageFireQueue.length = 0;
+}
+
+function spawnSniperTarget() {
+  const occupied = new Set(sniperTargets.map(t => t.windowId));
+  const free = sniperStage.windowGrid.filter(w => !occupied.has(w.id));
+  if (free.length === 0) return;
+  const win = free[Math.floor(Math.random() * free.length)];
+  sniperTargets.push({
+    windowId: win.id,
+    wx: win.x, wy: win.y, ww: win.w, wh: win.h,
+    state: 'rising', // rising -> showing -> retracting -> (removed)  or  -> hit
+    t: 0,
+    holdTime: 0.7 + Math.random() * 0.7,
+  });
+}
+
+function fireSniperShot(cx, cy) {
+  // Test against showing/rising targets (rising is also vulnerable in upper visible portion)
+  let hit = null;
+  let isHeadshot = false;
+  for (const tg of sniperTargets) {
+    if (tg.state !== 'showing' && tg.state !== 'rising') continue;
+    const silX = tg.wx + 4;
+    const silW = tg.ww - 8;
+    // visible silhouette height based on state
+    let progress = 1;
+    if (tg.state === 'rising') progress = Math.min(1, tg.t / 0.18);
+    const silH = tg.wh - 4;
+    const visibleH = silH * progress;
+    const silTopY = tg.wy + silH - visibleH;
+    const silBottomY = tg.wy + silH;
+    if (cx >= silX && cx <= silX + silW && cy >= silTopY && cy <= silBottomY) {
+      hit = tg;
+      const headBand = silTopY + visibleH * 0.32;
+      isHeadshot = cy <= headBand;
+      break;
+    }
+  }
+  if (hit) {
+    hit.state = 'hit';
+    hit.t = 0;
+    sniperStage.hits++;
+    if (isHeadshot) sniperStage.headshots++;
+    spawnStageHitBurst(cx, cy, isHeadshot ? 0xffce4d : 0xff3ea0, 14);
+  } else {
+    sniperStage.misses++;
+    spawnStageHitBurst(cx, cy, 0x5fc8e8, 6);
+  }
+}
+
+function updateSniper(dt) {
+  sniperStage.timeLeft = Math.max(0, sniperStage.timeLeft - dt);
+
+  // Drain fire queue
+  while (stageFireQueue.length > 0) {
+    const click = stageFireQueue.shift();
+    fireSniperShot(click.x, click.y);
+  }
+
+  // Target spawning
+  const showingCount = sniperTargets.filter(t => t.state === 'rising' || t.state === 'showing').length;
+  sniperStage.spawnTimer -= dt;
+  if (sniperStage.spawnTimer <= 0 && showingCount < 3) {
+    spawnSniperTarget();
+    sniperStage.spawnTimer = 0.55 + Math.random() * 0.65;
+  }
+
+  // Target state machines
+  for (let i = sniperTargets.length - 1; i >= 0; i--) {
+    const tg = sniperTargets[i];
+    tg.t += dt;
+    if (tg.state === 'rising' && tg.t >= 0.18) { tg.state = 'showing'; tg.t = 0; }
+    else if (tg.state === 'showing' && tg.t >= tg.holdTime) { tg.state = 'retracting'; tg.t = 0; }
+    else if (tg.state === 'retracting' && tg.t >= 0.18) { sniperTargets.splice(i, 1); }
+    else if (tg.state === 'hit' && tg.t >= 0.35) { sniperTargets.splice(i, 1); }
+  }
+
+  // Particles
+  for (let i = stageParticles.length - 1; i >= 0; i--) {
+    const p = stageParticles[i];
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.vx *= (1 - 2.6 * dt); p.vy *= (1 - 2.6 * dt);
+    p.life -= dt;
+    if (p.life <= 0) stageParticles.splice(i, 1);
+  }
+
+  updateSniperHUD();
+
+  // Stage completion: timer expires OR 12 hits.
+  if (sniperStage.timeLeft <= 0 || sniperStage.hits >= 12) {
+    finalizeSniperStats();
+    advanceStage();
+  }
+}
+
+function finalizeSniperStats() {
+  stats.sniper.hits = sniperStage.hits;
+  stats.sniper.misses = sniperStage.misses;
+  stats.sniper.headshots = sniperStage.headshots;
+}
+
+function drawSniperTarget(g, tg) {
+  let progress = 1;
+  if (tg.state === 'rising') progress = Math.min(1, tg.t / 0.18);
+  else if (tg.state === 'retracting') progress = 1 - Math.min(1, tg.t / 0.18);
+  else if (tg.state === 'hit') progress = 1 - Math.min(1, tg.t / 0.35);
+  if (progress <= 0.01) return;
+
+  const silX = tg.wx + 4;
+  const silW = tg.ww - 8;
+  const silH = tg.wh - 4;
+  const visibleH = silH * progress;
+  const startY = tg.wy + silH - visibleH;
+
+  // Light bleed behind silhouette (warm orange room light)
+  if (tg.state !== 'hit') {
+    g.beginFill(0xff8e3c, 0.18);
+    g.drawRect(tg.wx, tg.wy, tg.ww, tg.wh);
+    g.endFill();
+  }
+
+  // Body
+  const bodyTop = startY + visibleH * 0.35;
+  const bodyH = (tg.wy + silH) - bodyTop;
+  g.beginFill(0x080a14, 1);
+  g.drawRect(silX + silW * 0.22, bodyTop, silW * 0.56, bodyH);
+  g.endFill();
+  // Head (only when enough is visible)
+  if (progress > 0.45) {
+    const headY = startY + visibleH * 0.22;
+    const headR = silW * 0.16;
+    g.beginFill(0x080a14, 1);
+    g.drawCircle(silX + silW / 2, headY, headR);
+    g.endFill();
+  }
+  // Hit flash overlay
+  if (tg.state === 'hit') {
+    const flashA = (1 - Math.min(1, tg.t / 0.35)) * 0.85;
+    g.beginFill(0xff3ea0, flashA);
+    g.drawRect(tg.wx, tg.wy, tg.ww, tg.wh);
+    g.endFill();
+  }
+}
+
+function renderSniper() {
+  stageBuildingGfx.clear();
+  stageTargetGfx.clear();
+  stagePlayerGfx.clear();
+  stageBulletGfx.clear();
+  stageParticleGfx.clear();
+  drawBuildingExterior(stageBuildingGfx, W, H, sniperStage.windowGrid, 0);
+  for (const tg of sniperTargets) drawSniperTarget(stageTargetGfx, tg);
+  // Particles
+  for (const p of stageParticles) {
+    const a = Math.max(0, p.life / p.max);
+    stageParticleGfx.beginFill(p.color, a * 0.35);
+    stageParticleGfx.drawCircle(p.x, p.y, p.r * 2.6);
+    stageParticleGfx.endFill();
+    stageParticleGfx.beginFill(p.color, a);
+    stageParticleGfx.drawCircle(p.x, p.y, p.r);
+    stageParticleGfx.endFill();
+  }
+  // Crosshair tracks mouse (DOM)
+  const ch = document.getElementById('scopeCrosshair');
+  if (ch) { ch.style.left = mouseX + 'px'; ch.style.top = mouseY + 'px'; }
+}
+
+function updateSniperHUD() {
+  const t = document.getElementById('sniperTime');
+  if (t) t.textContent = sniperStage.timeLeft.toFixed(1);
+  const h = document.getElementById('sniperHits');
+  if (h) h.textContent = sniperStage.hits;
+  const head = document.getElementById('sniperHeads');
+  if (head) head.textContent = sniperStage.headshots;
+  const total = sniperStage.hits + sniperStage.misses;
+  const accEl = document.getElementById('sniperAcc');
+  if (accEl) accEl.textContent = total === 0 ? '--%' : Math.round((sniperStage.hits / total) * 100) + '%';
+  // Urgent timer pulse in last 5s
+  const tcell = t && t.closest('.hud-cell');
+  if (tcell) tcell.classList.toggle('urgent', sniperStage.timeLeft <= 5);
+}
+
+// ----- Rappel stage -----
+
+const RAPPEL_TOTAL_Y = 2400; // virtual descent distance (px)
+const RAPPEL_SPEEDS = { slow: 80, normal: 170, fast: 290 };
+
+function resetRappelStage() {
+  // Build a window grid for the rappel building. The building is twice as
+  // wide as the screen visually but we keep windows constrained to viewport.
+  const cols = 4;
+  const rowsPerScreen = 3;
+  const rowCount = Math.ceil((RAPPEL_TOTAL_Y + H) / (H / rowsPerScreen));
+  const marginX = Math.max(60, W * 0.1);
+  const cellW = (W - marginX * 2) / cols;
+  const cellH = H / rowsPerScreen;
+  const grid = [];
+  for (let r = 0; r < rowCount; r++) {
+    for (let c = 0; c < cols; c++) {
+      grid.push({
+        id: r * cols + c,
+        x: marginX + c * cellW + 8,
+        y: r * cellH + 12,
+        w: cellW - 16,
+        h: cellH - 24,
+        row: r, col: c,
+      });
+    }
+  }
+  // Deterministic enemy schedule per mission
+  const rand = mulberry32((missionNum * 2654435761) >>> 0);
+  const enemyCount = 7 + Math.floor(rand() * 4); // 7..10
+  const enemyRows = new Set();
+  const enemies = [];
+  const minRow = 2;       // first enemy a bit below start
+  const maxRow = rowCount - 2;
+  while (enemies.length < enemyCount) {
+    const r = minRow + Math.floor(rand() * (maxRow - minRow));
+    if (enemyRows.has(r)) continue;
+    enemyRows.add(r);
+    const c = Math.floor(rand() * cols);
+    const win = grid.find(w => w.row === r && w.col === c);
+    if (!win) continue;
+    enemies.push({
+      windowId: win.id,
+      wx: win.x, wy: win.y, ww: win.w, wh: win.h,
+      hp: 1,
+      state: 'dormant',  // dormant -> active -> telegraphing -> fired -> dead
+      t: 0,
+      activated: false,
+      fired: false,
+      dead: false,
+    });
+  }
+  rappelStage = {
+    y: 0, totalY: RAPPEL_TOTAL_Y,
+    ropeSpeed: RAPPEL_SPEEDS.normal,
+    sway: 0,
+    windowGrid: grid,
+    time: 0,
+    floorTotal: rowCount,
+    dead: false,
+  };
+  rappelEnemies = enemies;
+  stageBullets = [];
+  stageParticles = [];
+  stageFireQueue.length = 0;
+}
+
+function rappelPlayerScreenX() { return W * 0.42; }
+function rappelPlayerScreenY() { return H * 0.42; }
+
+function fireRappelShot(cx, cy) {
+  const px = rappelPlayerScreenX();
+  const py = rappelPlayerScreenY();
+  // Spawn a player bullet traveling from player toward click position
+  const dx = cx - px, dy = cy - py;
+  const dist = Math.hypot(dx, dy) || 1;
+  const speed = 1400;
+  stageBullets.push({
+    x: px, y: py,
+    vx: dx / dist * speed, vy: dy / dist * speed,
+    life: 0.5, color: 0xc4f1ff, dmg: 1, source: 'player',
+  });
+  stats.bulletsFired++;
+}
+
+function fireRappelEnemyShot(e) {
+  const px = rappelPlayerScreenX();
+  const py = rappelPlayerScreenY();
+  // Enemy fires from window toward player
+  const srcX = e.wx + e.ww / 2;
+  const srcY = e.wy - rappelStage.y + e.wh / 2;
+  const dx = px - srcX, dy = py - srcY;
+  const dist = Math.hypot(dx, dy) || 1;
+  const speed = 520;
+  stageBullets.push({
+    x: srcX, y: srcY,
+    vx: dx / dist * speed, vy: dy / dist * speed,
+    life: 1.6, color: 0xffd84d, dmg: 12, source: 'enemy',
+  });
+}
 
 function updateRappel(dt) {
+  if (rappelStage.dead) return; // frozen pending death-overlay tap
   rappelStage.time += dt;
+  // Rope speed control
+  let target = RAPPEL_SPEEDS.normal;
+  if (keys.has('w') || keys.has('arrowup'))   target = RAPPEL_SPEEDS.slow;
+  if (keys.has('s') || keys.has('arrowdown')) target = RAPPEL_SPEEDS.fast;
+  rappelStage.ropeSpeed += (target - rappelStage.ropeSpeed) * Math.min(1, dt * 4);
+
+  // Descend
+  rappelStage.y += rappelStage.ropeSpeed * dt;
+  if (rappelStage.y > rappelStage.totalY) rappelStage.y = rappelStage.totalY;
+
+  // Sway based on speed
+  rappelStage.sway = Math.sin(rappelStage.time * 2.6) * (rappelStage.ropeSpeed / 200) * 6;
+
+  // Drain fire queue
+  while (stageFireQueue.length > 0) {
+    const click = stageFireQueue.shift();
+    fireRappelShot(click.x, click.y);
+  }
+
+  // Enemy state machine
+  const px = rappelPlayerScreenX(), py = rappelPlayerScreenY();
+  for (const e of rappelEnemies) {
+    if (e.dead) continue;
+    const screenY = e.wy - rappelStage.y;
+    // Activation: enemy becomes active when in view + within range
+    if (e.state === 'dormant' && screenY > -40 && screenY < H * 0.85) {
+      e.state = 'telegraph';
+      e.t = 0;
+    }
+    if (e.state === 'telegraph') {
+      e.t += dt;
+      if (e.t >= 0.55) {
+        e.state = 'fired';
+        e.t = 0;
+        fireRappelEnemyShot(e);
+      }
+    } else if (e.state === 'fired') {
+      e.t += dt;
+      // After firing, enemy retreats out of sight after 0.8s
+      if (e.t >= 0.8 || screenY < -60 || screenY > H + 60) e.state = 'spent';
+    }
+  }
+
+  // Bullets
+  for (let i = stageBullets.length - 1; i >= 0; i--) {
+    const b = stageBullets[i];
+    b.x += b.vx * dt; b.y += b.vy * dt;
+    b.life -= dt;
+    let dead = b.life <= 0;
+    if (!dead && b.x < -30) dead = true;
+    if (!dead && b.x > W + 30) dead = true;
+    if (!dead && b.y < -30) dead = true;
+    if (!dead && b.y > H + 30) dead = true;
+
+    if (!dead && b.source === 'player') {
+      // Hit-check against enemies in view
+      for (const e of rappelEnemies) {
+        if (e.dead) continue;
+        if (e.state === 'spent' || e.state === 'dormant') continue;
+        const sy = e.wy - rappelStage.y;
+        if (b.x >= e.wx && b.x <= e.wx + e.ww && b.y >= sy && b.y <= sy + e.wh) {
+          e.hp -= b.dmg;
+          spawnStageHitBurst(b.x, b.y, 0xff3ea0, 10);
+          if (e.hp <= 0) {
+            e.dead = true;
+            stats.bulletsHit++;
+            stats.rappel.kills++;
+            spawnStageHitBurst(b.x, b.y, 0xff8ec8, 14);
+          }
+          dead = true; break;
+        }
+      }
+    } else if (!dead && b.source === 'enemy') {
+      // Hit player figure
+      const dx = b.x - px, dy = b.y - py;
+      if (dx*dx + dy*dy < 14*14) {
+        player.hp = Math.max(0, player.hp - b.dmg);
+        stats.rappel.damageTaken += b.dmg;
+        spawnStageHitBurst(b.x, b.y, 0xff5050, 8);
+        flashHit();
+        dead = true;
+        if (player.hp <= 0) {
+          rappelStage.dead = true;
+          deathOverlay.classList.add('show');
+          return;
+        }
+      }
+    }
+    if (dead) stageBullets.splice(i, 1);
+  }
+
+  // Particles
+  for (let i = stageParticles.length - 1; i >= 0; i--) {
+    const p = stageParticles[i];
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.vx *= (1 - 2.6 * dt); p.vy *= (1 - 2.6 * dt);
+    p.life -= dt;
+    if (p.life <= 0) stageParticles.splice(i, 1);
+  }
+
+  updateRappelHUD();
+
+  // Stage completion: reached bottom
+  if (rappelStage.y >= rappelStage.totalY - 1) {
+    finalizeRappelStats();
+    advanceStage();
+  }
 }
-function renderRappel() { /* placeholder: DOM overlay handles visuals */ }
+
+function finalizeRappelStats() {
+  stats.rappel.time = rappelStage.time;
+}
+
+function drawRappelEnemy(g, e) {
+  if (e.dead) return;
+  const sy = e.wy - rappelStage.y;
+  if (sy + e.wh < -10 || sy > H + 10) return;
+  if (e.state === 'dormant') return;
+
+  // Window light
+  g.beginFill(0xffd84d, 0.18);
+  g.drawRect(e.wx, sy, e.ww, e.wh);
+  g.endFill();
+  // Telegraph: red laser dot pulsing
+  if (e.state === 'telegraph') {
+    const pulse = (Math.sin(e.t * 30) + 1) / 2;
+    const aimX = rappelPlayerScreenX();
+    const aimY = rappelPlayerScreenY();
+    const srcX = e.wx + e.ww / 2;
+    const srcY = sy + e.wh / 2;
+    g.lineStyle(1, 0xff5050, 0.4 + pulse * 0.4);
+    g.moveTo(srcX, srcY); g.lineTo(aimX, aimY);
+    g.lineStyle(0);
+    g.beginFill(0xff5050, 0.8);
+    g.drawCircle(srcX, srcY, 3 + pulse * 2);
+    g.endFill();
+  }
+  // Silhouette
+  const silX = e.wx + 4;
+  const silW = e.ww - 8;
+  const silH = e.wh - 6;
+  g.beginFill(0x080a14, 1);
+  g.drawRect(silX + silW * 0.2, sy + silH * 0.45, silW * 0.6, silH * 0.55);
+  g.endFill();
+  g.beginFill(0x080a14, 1);
+  g.drawCircle(silX + silW / 2, sy + silH * 0.32, silW * 0.16);
+  g.endFill();
+  // Gun barrel pointing roughly at player when telegraphing or fired
+  if (e.state === 'telegraph' || e.state === 'fired') {
+    const aimX = rappelPlayerScreenX();
+    const aimY = rappelPlayerScreenY();
+    const cx = silX + silW / 2;
+    const cy = sy + silH * 0.55;
+    const ang = Math.atan2(aimY - cy, aimX - cx);
+    g.lineStyle(2, 0x444444, 1);
+    g.moveTo(cx, cy);
+    g.lineTo(cx + Math.cos(ang) * 14, cy + Math.sin(ang) * 14);
+    g.lineStyle(0);
+  }
+}
+
+function drawRappelPlayer(g) {
+  const px = rappelPlayerScreenX() + rappelStage.sway;
+  const py = rappelPlayerScreenY();
+  // Rope from top of screen to player
+  g.lineStyle(2, 0xc4f1ff, 0.85);
+  g.moveTo(px + rappelStage.sway * 0.4, 0);
+  g.lineTo(px, py - 14);
+  g.lineStyle(0);
+  // Operator figure: head + torso + legs in profile
+  // Backpack
+  g.beginFill(0x0a3a5c, 1); g.drawRect(px - 10, py - 10, 8, 18); g.endFill();
+  // Torso
+  g.beginFill(0x102a44, 1);
+  g.drawRoundedRect(px - 8, py - 12, 16, 22, 3);
+  g.endFill();
+  // Head
+  g.beginFill(0xc4f1ff, 0.95); g.drawCircle(px, py - 16, 6); g.endFill();
+  // Visor
+  g.beginFill(0xff3ea0, 0.8); g.drawRect(px - 5, py - 17, 10, 3); g.endFill();
+  // Arm holding rifle - aim toward mouse
+  const ang = Math.atan2(mouseY - py, mouseX - px);
+  g.lineStyle(3, 0x88f7c7, 1);
+  g.moveTo(px, py - 4);
+  g.lineTo(px + Math.cos(ang) * 22, py - 4 + Math.sin(ang) * 22);
+  g.lineStyle(0);
+  // Legs
+  g.beginFill(0x102a44, 1);
+  g.drawRect(px - 6, py + 8, 5, 10);
+  g.drawRect(px + 1, py + 8, 5, 10);
+  g.endFill();
+  // Rope anchor at top of screen (pulley silhouette)
+  g.beginFill(0x88f7c7, 0.8);
+  g.drawCircle(px + rappelStage.sway * 0.4, 0, 3);
+  g.endFill();
+}
+
+function renderRappel() {
+  stageBuildingGfx.clear();
+  stageTargetGfx.clear();
+  stagePlayerGfx.clear();
+  stageBulletGfx.clear();
+  stageParticleGfx.clear();
+
+  // Building scrolled by -y so that as descent increases, the building moves up.
+  drawBuildingExterior(stageBuildingGfx, W, H, rappelStage.windowGrid, -rappelStage.y);
+  // Enemies in windows
+  for (const e of rappelEnemies) drawRappelEnemy(stageTargetGfx, e);
+  // Player figure + rope
+  drawRappelPlayer(stagePlayerGfx);
+  // Bullets
+  for (const b of stageBullets) {
+    if (b.source === 'enemy') {
+      stageBulletGfx.beginFill(0xff5050, 0.25); stageBulletGfx.drawCircle(b.x, b.y, 8); stageBulletGfx.endFill();
+      stageBulletGfx.beginFill(0xffd84d, 0.85); stageBulletGfx.drawCircle(b.x, b.y, 4); stageBulletGfx.endFill();
+      stageBulletGfx.beginFill(0xffffff, 1); stageBulletGfx.drawCircle(b.x, b.y, 1.8); stageBulletGfx.endFill();
+    } else {
+      stageBulletGfx.beginFill(0xc4f1ff, 0.25); stageBulletGfx.drawCircle(b.x, b.y, 7); stageBulletGfx.endFill();
+      stageBulletGfx.beginFill(0xc4f1ff, 0.7); stageBulletGfx.drawCircle(b.x, b.y, 3.5); stageBulletGfx.endFill();
+      stageBulletGfx.beginFill(0xffffff, 1); stageBulletGfx.drawCircle(b.x, b.y, 1.6); stageBulletGfx.endFill();
+    }
+  }
+  // Particles
+  for (const p of stageParticles) {
+    const a = Math.max(0, p.life / p.max);
+    stageParticleGfx.beginFill(p.color, a * 0.35);
+    stageParticleGfx.drawCircle(p.x, p.y, p.r * 2.6);
+    stageParticleGfx.endFill();
+    stageParticleGfx.beginFill(p.color, a);
+    stageParticleGfx.drawCircle(p.x, p.y, p.r);
+    stageParticleGfx.endFill();
+  }
+  // Crosshair tracks mouse
+  const ch = document.getElementById('rappelCrosshair');
+  if (ch) { ch.style.left = mouseX + 'px'; ch.style.top = mouseY + 'px'; }
+}
+
+function updateRappelHUD() {
+  const fl = document.getElementById('rappelFloor');
+  if (fl) {
+    const totalFloors = rappelStage.floorTotal;
+    const currentFloor = Math.max(1, totalFloors - Math.floor(rappelStage.y / (H / 3)));
+    fl.textContent = currentFloor;
+  }
+  const hpEl = document.getElementById('rappelHp');
+  if (hpEl) {
+    hpEl.textContent = Math.round(player.hp);
+    const cell = hpEl.closest('.hud-cell');
+    if (cell) cell.classList.toggle('urgent', player.hp <= player.maxHp * 0.3);
+    hpEl.classList.toggle('val-mint', player.hp > player.maxHp * 0.5);
+    hpEl.classList.toggle('val-red', player.hp <= player.maxHp * 0.3);
+  }
+  const rateEl = document.getElementById('rappelRate');
+  if (rateEl) {
+    if (rappelStage.ropeSpeed < RAPPEL_SPEEDS.normal - 20) rateEl.textContent = 'SLOW';
+    else if (rappelStage.ropeSpeed > RAPPEL_SPEEDS.normal + 20) rateEl.textContent = 'FAST';
+    else rateEl.textContent = 'NORM';
+  }
+  const fill = document.getElementById('rappelAltFill');
+  if (fill) {
+    const pct = Math.min(100, (rappelStage.y / rappelStage.totalY) * 100);
+    fill.style.height = pct + '%';
+  }
+}
 
 function update(dt) {
   // Stage dispatch: sniper/rappel run their own loops; top-down falls through.
